@@ -1,0 +1,44 @@
+version: "3"
+services:
+  rest_api:
+    container_name: neuralmed_rest_api
+    build: ./rest_api
+    restart: always
+    depends_on: 
+      - rabbitmq
+    ports:
+      - "5000:5000"
+    environment:
+      DEBUG: 1
+      PORT: 5000
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_IMAGE_QUEUE: "resize_images"
+      UPLOAD_FOLDER: "/var"
+    volumes:
+      - "/tmp/neuralmed/rest_api:/var"
+
+  image_resizer:
+    container_name: neuralmed_image_resizer
+    build: ./image_resizer
+    restart: always
+    depends_on:
+      - rest_api
+      - rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_IMAGE_QUEUE: "resize_images"
+      CACHE_IMAGES_FOLDER: "/var/images_cache"
+      RESIZED_IMAGES_FOLDER: "/var/resized_images"
+    volumes:
+      - "/tmp/neuralmed/image_resizer/cache:/var/images_cache"
+      - "/tmp/neuralmed/image_resizer/resized:/var/resized_images"
+
+  rabbitmq:
+    container_name: neuralmed_rabbitmq
+#    image: rabbitmq:3-management
+    image: rabbitmq:3.7
+    restart: always
+    ports:
+      - "5672:5672"
+#      - "15672:15672"
